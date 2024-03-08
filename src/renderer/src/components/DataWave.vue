@@ -77,7 +77,7 @@
 <script lang="ts" setup>
 import { NSelect, NButton, useMessage } from "naive-ui";
 const { SerialPort } = require("serialport");
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import * as echarts from "echarts";
 
 const message = useMessage();
@@ -129,14 +129,14 @@ async function handleConnect() {
     // 读取数据
     port.on("data", (data) => {
       // 接收数据并且转换为16进制
-      const hexData = Buffer.from(data).toString("hex"); // 将数据转换为16进制字符串
-      const splitResult = splitHexData(hexData);
-      const angles = calculateAngles(splitResult);
+      const hexData = Buffer.from(data).toString('hex');
+      const splitStringData = splitHexData(hexData);
+      const hexNumberData = hexStringTohexNumber(splitStringData);
+      const angles = calculateAngles(hexNumberData);
 
       roll.value = angles[0];
       pitch.value = angles[1];
       yaw.value = angles[2];
-      console.log(angles);
     });
     message.success("串口已打开");
     buttonState.value = true;
@@ -180,9 +180,14 @@ onMounted(() => {
 
   // 渲染echarts
   const infoEl = info.value;
-  const userEc = echarts.init(infoEl, "light");
+  const userEc = echarts.init(infoEl);
 
   let option = {
+    // 图例
+    legend: {
+      top: 0,
+      left: 30,
+    },
     // 横坐标
     xAxis: {
       type: "category",
@@ -191,9 +196,8 @@ onMounted(() => {
     // 纵坐标
     yAxis: {
       type: "value",
-      min: -180, // 设置纵坐标最小值为-180
-      max: 360, // 设置纵坐标最大值为180
-      interval: 45, // 设置纵坐标刻度间隔为45度
+      min: 0, // 设置纵坐标最小值为-180
+      max: 8, // 设置纵坐标最大值为180
     },
 
     // data
@@ -258,43 +262,50 @@ onMounted(() => {
 });
 
 // 分割数据
-function splitHexData(hexData: string) {
+function splitHexData(hexData: string): [[string, string], [string, string], [string, string]] {
   const startIndex = hexData.indexOf('aaaa0106');
   if (startIndex !== -1) {
-    const group1 = hexData.substring(startIndex + 8, startIndex + 10);
-    const group2 = hexData.substring(startIndex + 10, startIndex + 12);
-    const group3 = hexData.substring(startIndex + 12, startIndex + 14);
+    const group1 = hexData.substring(startIndex + 8, startIndex + 12);
+    const group2 = hexData.substring(startIndex + 12, startIndex + 16);
+    const group3 = hexData.substring(startIndex + 16, startIndex + 20);
 
     const splitGroups = (group: string): [string, string] => {
-      return [group.substring(0, 1), group.substring(1, 2)];
+      return [group.substring(0, 2), group.substring(2, 4)];
     };
 
     return [splitGroups(group1), splitGroups(group2), splitGroups(group3)];
   }
-  return [['0', '0'], ['0', '0'], ['0', '0']];
+  return [["00", "00"], ["00", "00"], ["00", "00"]];
+}
+
+// 添加0x, 转换为16进制
+function hexStringTohexNumber(hexStringList: [[string, string], [string, string], [string, string]]): [[number, number], [number, number], [number, number]] {
+  const insertStr = (singleStringList: [string, string]): [string, string] => {
+    const head: string = "0x";
+    return [head.concat(singleStringList[0]), head.concat(singleStringList[1])];
+  };
+
+  hexStringList = [insertStr(hexStringList[0]), insertStr(hexStringList[1]), insertStr(hexStringList[2])];
+
+  const hexStrToNumber = (singleHexString: [string, string]): [number, number] => {
+    return [parseInt(singleHexString[0], 16), parseInt(singleHexString[1], 16)];
+  };
+
+  return [hexStrToNumber(hexStringList[0]), hexStrToNumber(hexStringList[1]), hexStrToNumber(hexStringList[2])];
 }
 
 // 计算角度
-function calculateAngles(hexData: string[][]) {
-  if (hexData && hexData.length === 3) {
-    const calculateAngle = (high: string, low: string): number => {
-      const highValue = parseInt(high, 16);
-      const lowValue = parseInt(low, 16);
-      return ((highValue << 8) + lowValue) / 100;
-    };
-
-    const angles: number[] = [];
-    hexData.forEach(group => {
-      if (group.length === 2) {
-        const angle = calculateAngle(group[0], group[1]);
-        angles.push(angle);
-      }
-    });
-    return angles;
-  }
-  return [0,0,0];
+function calculateAngles(groups: [[number, number], [number, number], [number, number]]): [number, number, number] {
+  const angle = (group: [number, number]): number => {
+    return ((group[0] << 8) + group[1]) / 100;
+  };
+  return [angle(groups[0]),angle(groups[1]), angle(groups[2])];
 }
 
+// 组件卸载销毁定时器
+onUnmounted(() => {
+  clearInterval(readInterval);
+})
 </script>
 
 <style module>

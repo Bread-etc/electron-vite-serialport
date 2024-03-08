@@ -24,7 +24,7 @@ const routes: Array<RouteRecordRaw> = [
             title: "飞控状态",
         },
         component: () => import("@renderer/components/FlightControl.vue")
-    }
+    },
 ];
 
 // 定义路由器
