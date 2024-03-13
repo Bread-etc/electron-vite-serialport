@@ -23,7 +23,7 @@ import Navigation from './Navigation.vue';
     min-width: 700px;
 
     .navigation {
-        width: 20%;
+        min-width: 20%;
         display: flex;
         justify-content: center;
     }

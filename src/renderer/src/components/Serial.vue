@@ -15,11 +15,11 @@
           @click="handleClearReceive"
           type="info"
           ghost
-          size="tiny"
+          size="small"
           style="
             font-weight: bold;
             font-size: 0.8rem;
-            width: 15%;
+            width: 20%;
           "
         >
           清空接收区
@@ -28,11 +28,11 @@
           @click="handleClearSend"
           type="info"
           ghost
-          size="tiny"
+          size="small"
           style="
             font-weight: bold;
             font-size: 0.8rem;
-            width: 15%;
+            width: 20%;
             margin-left: 1rem;
           "
         >
