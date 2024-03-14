@@ -59,9 +59,9 @@
       </div>
       <div :class="$style.simplePITSetting">
         <span :class="$style.label">位置保持</span>
-        <input type="number" v-model0="p10"/>
-        <input type="number" v-model0="i10"/>
-        <input type="number" v-model0="d10"/>
+        <input type="number" v-model="p10"/>
+        <input type="number" v-model="i10"/>
+        <input type="number" v-model="d10"/>
       </div>
       <div :class="$style.simplePITSetting">
         <span :class="$style.label">PID11</span>
@@ -111,70 +111,36 @@ import { onUnmounted, ref } from "vue";
 import { NButton, NIcon, useMessage } from "naive-ui";
 import { ApprovalsApp24Filled, DrawerArrowDownload24Filled, DrawerAdd24Filled } from "@vicons/fluent";
 
-
-const p1 = ref(0);
-const p2 = ref(0);
-const p3 = ref(0);
-const p4 = ref(0);
-const p5 = ref(0);
-const p6 = ref(0);
-const p7 = ref(0);
-const p8 = ref(0);
-const p9 = ref(0);
-const p10 = ref(0);
-const p11 = ref(0);
-const p12 = ref(0);
-const i1 = ref(0);
-const i2 = ref(0);
-const i3 = ref(0);
-const i4 = ref(0);
-const i5 = ref(0);
-const i6 = ref(0);
-const i7 = ref(0);
-const i8 = ref(0);
-const i9 = ref(0);
-const i10 = ref(0);
-const i11 = ref(0);
-const i12 = ref(0);
-const d1 = ref(0);
-const d2 = ref(0);
-const d3 = ref(0);
-const d4 = ref(0);
-const d5 = ref(0);
-const d6 = ref(0);
-const d7 = ref(0);
-const d8 = ref(0);
-const d9 = ref(0);
-const d10 = ref(0);
-const d11 = ref(0);
-const d12 = ref(0);
-
-// 串口
-const port: any = new SerialPort({ path: 'COM3', baudRate: 500000, autoopen:false });
-const receive = ref<string>("");
+// 交互模块
 const message = useMessage();
+const receive = ref<string>("");
+
+// 定义多个变量
+const p1 = ref(0), p2 = ref(0), p3 = ref(0), p4 = ref(0), p5 = ref(0), p6 = ref(0), p7 = ref(0), p8 = ref(0), p9 = ref(0), p10 = ref(0), p11 = ref(0), p12 = ref(0);
+const i1 = ref(0), i2 = ref(0), i3 = ref(0), i4 = ref(0), i5 = ref(0), i6 = ref(0), i7 = ref(0), i8 = ref(0), i9 = ref(0), i10 = ref(0), i11 = ref(0), i12 = ref(0);
+const d1 = ref(0), d2 = ref(0), d3 = ref(0), d4 = ref(0), d5 = ref(0), d6 = ref(0), d7 = ref(0), d8 = ref(0), d9 = ref(0), d10 = ref(0), d11 = ref(0), d12 = ref(0);
+// 自动连接并且打开串口
+const port: any = new SerialPort({ path: 'COM3', baudRate: 500000, autoopen: true });
 
 // 读取PID
 async function handleRead() {
   if (port) {
-    // 取消注册之前的事件处理
-    await port.removeAllListeners('data');
+    // 读取PID命令: aaaf020101015d
     const sendData = Buffer.from("AAAF020101015D", "hex");
     await port.write(sendData);
-    // 解码收到的信息
-    await port.on("data", data => {
-      const hexData = Buffer.from(data).toString("hex");
-      receive.value += hexData + "\n";
-
+    // 解码收到的信息(隔300ms，防止收到错误信息)
+    await setTimeout(() => {
+      const hexData = Buffer.from(port.read()).toString("hex");
+      receive.value = hexData;
       const lastIndex = receive.value.lastIndexOf("aaaaef02025da4");
       if (lastIndex !== -1) {
         const pidString = receive.value.slice(lastIndex + "aaaaef02025da4".length)
         splitPid123(pidString);
         splitPid456(pidString);
         splitPid789(pidString);
+        message.success("读取PID成功");
       }
-    })
-    message.success("读取PID成功");
+    }, 300);
     return;
   } else {
     message.error("读取PID失败...");
@@ -186,16 +152,14 @@ async function handleRead() {
 async function handleWrite() {
   if (port) {
     // 构建发送的数据帧
-    const frame1To3 = buildFrame(p1, i1, d1, p2, i2, d2, p3, i3, d3, 10);
-    const frame4To6 = buildFrame(p4, i4, d4, p5, i5, d5, p6, i6, d6, 11);
-    const frame7To9 = buildFrame(p7, i7, d7, p8, i8, d8, p9, i9, d9, 12);
-    console.log(frame1To3);
-    console.log(frame4To6);
-    console.log(frame7To9);
+    const frame1To3 = Buffer.from(buildFrame(p1, i1, d1, p2, i2, d2, p3, i3, d3, 10), "hex");
+    const frame4To6 = Buffer.from(buildFrame(p4, i4, d4, p5, i5, d5, p6, i6, d6, 11), "hex");
+    const frame7To9 = Buffer.from(buildFrame(p7, i7, d7, p8, i8, d8, p9, i9, d9, 12), "hex");
     await port.write(frame1To3);
     await port.write(frame4To6);
     await port.write(frame7To9);
-
+    await handleRecover();
+    message.success("写入PID成功");
     return;
   } else {
     message.error("写入PID失败...");
@@ -204,48 +168,15 @@ async function handleWrite() {
 }
 
 // 恢复默认PID
-async function handleRecover() {
-  p1.value = 0;
-  p2.value = 0;
-  p3.value = 0;
-  p4.value = 0;
-  p5.value = 0;
-  p6.value = 0;
-  p7.value = 0;
-  p8.value = 0;
-  p9.value = 0;
-  p10.value = 0;
-  p11.value = 0;
-  p12.value = 0;
-  i1.value = 0;
-  i2.value = 0;
-  i3.value = 0;
-  i4.value = 0;
-  i5.value = 0;
-  i6.value = 0;
-  i7.value = 0;
-  i8.value = 0;
-  i9.value = 0;
-  i10.value = 0;
-  i11.value = 0;
-  i12.value = 0;
-  d1.value = 0;
-  d2.value = 0;
-  d3.value = 0;
-  d4.value = 0;
-  d5.value = 0;
-  d6.value = 0;
-  d7.value = 0;
-  d8.value = 0;
-  d9.value = 0;
-  d10.value = 0;
-  d11.value = 0;
-  d12.value = 0;
-  
+function handleRecover() {
+  p1.value = p2.value = p3.value = p4.value = p5.value = p6.value = p7.value = p8.value = p9.value = p10.value = p11.value = p12.value = 0;
+  i1.value = i2.value = i3.value = i4.value = i5.value = i6.value = i7.value = i8.value = i9.value = i10.value = i11.value = i12.value = 0;
+  d1.value = d2.value = d3.value = d4.value = d5.value = d6.value = d7.value = d8.value = d9.value = d10.value = d11.value = d12.value = 0;
 }
 
 // 分隔处理
 function splitPid123(hexData: string) {
+  // 功能字10
   const startIndex = hexData.indexOf('aaaa1012');
   if (startIndex !== -1) {
     const PID_P1 = hexData.substring(startIndex + 8, startIndex + 12);
@@ -265,6 +196,7 @@ function splitPid123(hexData: string) {
 }
 
 function splitPid456(hexData: string) {
+  // 功能字11
   const startIndex = hexData.indexOf('aaaa1112');
   if (startIndex !== -1) {
     const PID_P4 = hexData.substring(startIndex + 8, startIndex + 12);
@@ -284,6 +216,7 @@ function splitPid456(hexData: string) {
 }
 
 function splitPid789(hexData: string) {
+  // 功能字12
   const startIndex = hexData.indexOf('aaaa1212');
   if (startIndex !== -1) {
     const PID_P7 = hexData.substring(startIndex + 8, startIndex + 12);
@@ -338,7 +271,6 @@ onUnmounted(() => {
   // 关闭串口
   if (port) {
     port.close();
-    receive.value = '';
   }
 })
 
