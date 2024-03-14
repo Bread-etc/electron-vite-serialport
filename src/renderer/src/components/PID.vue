@@ -120,7 +120,7 @@ const p1 = ref(0), p2 = ref(0), p3 = ref(0), p4 = ref(0), p5 = ref(0), p6 = ref(
 const i1 = ref(0), i2 = ref(0), i3 = ref(0), i4 = ref(0), i5 = ref(0), i6 = ref(0), i7 = ref(0), i8 = ref(0), i9 = ref(0), i10 = ref(0), i11 = ref(0), i12 = ref(0);
 const d1 = ref(0), d2 = ref(0), d3 = ref(0), d4 = ref(0), d5 = ref(0), d6 = ref(0), d7 = ref(0), d8 = ref(0), d9 = ref(0), d10 = ref(0), d11 = ref(0), d12 = ref(0);
 // 自动连接并且打开串口
-const port: any = new SerialPort({ path: 'COM3', baudRate: 500000, autoopen: true });
+const port: any = new SerialPort({ path: 'COM3', baudRate: 500000, autoOpen: true });
 
 // 读取PID
 async function handleRead() {
@@ -129,8 +129,8 @@ async function handleRead() {
     const sendData = Buffer.from("AAAF020101015D", "hex");
     await port.write(sendData);
     // 解码收到的信息(隔300ms，防止收到错误信息)
-    await setTimeout(() => {
-      const hexData = Buffer.from(port.read()).toString("hex");
+    setTimeout(() => {
+      const hexData = port.read().toString("hex");
       receive.value = hexData;
       const lastIndex = receive.value.lastIndexOf("aaaaef02025da4");
       if (lastIndex !== -1) {

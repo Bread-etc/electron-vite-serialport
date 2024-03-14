@@ -60,13 +60,13 @@ onMounted(() => {
     // 横坐标
     xAxis: {
       type: "category",
-      interval: 0.5, // 设置坐标轴刻度间隔为500ms
+      interval: 1.5, // 设置坐标轴刻度间隔为1500ms
     },
     // 纵坐标
     yAxis: {
       type: "value",
-      min: 0, // 设置纵坐标最小值为-180
-      max: 8, // 设置纵坐标最大值为180
+      min: 0,
+      max: 8,
     },
 
     // data
@@ -127,7 +127,7 @@ onMounted(() => {
     data_pit.push(pitch.value);
     data_yaw.push(yaw.value);
     userEc.setOption(option);
-  }, 1000);
+  }, 1500);
 });
 
 // 分割数据

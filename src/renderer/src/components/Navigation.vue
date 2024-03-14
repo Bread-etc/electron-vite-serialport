@@ -151,19 +151,20 @@ function handleBaudRateOption(value: number) {
 // 连接串口
 async function handleConnect() {
   if (portChoose.value && baudRateChoose.value) {
+    receive.value = '';
     port = new SerialPort({
       path: portChoose.value,
       baudRate: baudRateChoose.value,
       autoOpen: false,
     });
-    port.open();
+    await port.open();
     // 读取数据
     port.on("data", (data) => {
       const hexData = Buffer.from(data).toString("hex"); // 将数据转换为16进制字符串
       receive.value += hexData + "\n";
       // 存储接受值到pinia中
       serialPortInfo.receive = receive.value;
-    });
+    }, 1500);
     message.success("串口已打开");
     buttonState.value = true;
     return;
