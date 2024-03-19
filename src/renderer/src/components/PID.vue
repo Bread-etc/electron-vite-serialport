@@ -314,6 +314,7 @@ onUnmounted(() => {
   padding: 1rem;
   justify-content: center;
   align-items: center;
+  margin-top: 1rem;
 
 }
 </style>

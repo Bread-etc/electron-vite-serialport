@@ -1,13 +1,15 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+const path = require('path');
+const fs = require('fs');
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 700,
-    height: 500,
+    width: 800,
+    height: 600,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -50,6 +52,33 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  /**
+   * 另存为..
+   * @param options: { title: String, defaultPath: String, buttonLabel: String, filters: area }
+   * @param content: String
+   * @return Promise
+   */
+  ipcMain.handle('saveFile', async (_event, content, options) => {
+    let path;
+    try {
+      const { filePath } = await dialog.showSaveDialog(options);
+      path = filePath;
+    } catch (err) {
+      return Promise.reject({ error: err, success: false });
+    }
+    if (path) {
+      try {
+        fs.writeFileSync(path, content, 'utf-8');
+        return Promise.resolve({ error: null, success: true });
+      } catch (err) {
+        return Promise.reject({ error: err, success: false });
+      }
+    } else {
+      return Promise.reject({ error: "not found document path", success: false, canceled: true });
+    }
+  });
+
 
   createWindow()
 

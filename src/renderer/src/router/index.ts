@@ -21,6 +21,11 @@ const routes: Array<RouteRecordRaw> = [
     name: "pid",
     component: () => import("@renderer/components/PID.vue"),
   },
+  {
+    path: "/excel",
+    name: "excel",
+    component: () => import("@renderer/components/DataDownload.vue"),
+  }
 ];
 
 // 定义路由器

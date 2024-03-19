@@ -28,7 +28,8 @@
     "pinia": "^2.1.7",
     "serialport": "^12.0.0",
     "vue-router": "^4.3.0",
-    "xicons": "^1.0.0"
+    "xicons": "^1.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",
