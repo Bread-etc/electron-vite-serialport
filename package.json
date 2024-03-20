@@ -29,7 +29,7 @@
     "serialport": "^12.0.0",
     "vue-router": "^4.3.0",
     "xicons": "^1.0.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

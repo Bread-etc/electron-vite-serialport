@@ -23,3 +23,7 @@
 ### 2024-3-19
 - 添加`DataDownload`
 - 添加文件另存为`importFile`
+
+### 2024-3-20
+- 修改部分变量初始化方式
+- 添加xlsx文件工具`exportXlsx.ts`
