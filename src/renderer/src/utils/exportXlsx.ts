@@ -1,36 +1,29 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
-/**
- * @description: 导出excel
- * @param {any} dataList
- * @param {Array} fields
- * @param {Array} headers
- * @param {String} fileName.extname
- * @param {String} sheetName
- * @return {*}
- */
-
-export function exportExcel(dataList: any, fields: Array<string>, headers: Array<string>, fileName: string, sheetName: string) {
-    let data = new Array();
-    if (!Array.isArray(dataList)) return console.warn('dataList is not an array type');
-
-    data = dataList.map((obj) => {
-        return fields.map((field) => {
-            return obj[field];
-        })
-    })
-
-    if (headers.length > 0) {
-        data.splice(0, 0, headers);
-    } else {
-        // 将headers设置为英文字段表头
-        data.splice(0, 0, fields);
-    }
-    // 创建工作表
-    const ws = XLSX.utils.aoa_to_sheet(data);
+export function createExcel(
+  fileName: string,
+  sheetName: string,
+  newData: any[]
+) {
+  try {
+    console.log(newData);
     // 创建工作簿
-    const wb = XLSX.utils.book_new();
+    const workBook = XLSX.utils.book_new();
+    // 创建工作表
+    const workSheet = XLSX.utils.json_to_sheet(newData);
 
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, fileName);
+    // 设置列宽为 10px
+    const columns =
+      newData.length > 0
+        ? Object.keys(newData[0]).map(() => ({ wch: 10 }))
+        : [];
+    workSheet["!cols"] = columns;
+
+    // 生成xlsx文件
+    XLSX.utils.book_append_sheet(workBook, workSheet, sheetName);
+    // 写文件
+    XLSX.writeFile(workBook, fileName);
+  } catch (error) {
+    console.error("写入 Excel 文件时出现错误:", error);
+  }
 }

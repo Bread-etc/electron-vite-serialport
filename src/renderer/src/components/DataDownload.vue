@@ -3,9 +3,17 @@
     <div :class="$style.saveSetting">
       <span :class="$style.label">保存设置</span>
       <div :class="$style.functionArea">
-        触发源: <select />
-        写入频率: <select />
-        <button @click="writeXlsxFile">开始写入</button>
+        触发源:
+        <select v-model="source">
+          <option value="timer">timer</option>
+        </select>
+        写入频率:
+        <select v-model="timer">
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+        </select>
+        <button @click="startWrite" v-show="!writing">开始写入</button>
+        <button @click="stopWrite" v-show="writing">停止写入</button>
       </div>
     </div>
     <div :class="$style.selectArea">
@@ -33,26 +41,16 @@
 </template>
 
 <script lang="ts" setup>
-import { onUnmounted, ref, reactive, watch } from 'vue';
-import { exportExcel } from '@renderer/utils/exportXlsx';
+import { ref, reactive, watch } from 'vue';
+import { useMessage } from 'naive-ui';
+import { createExcel } from '@renderer/utils/exportXlsx';
+import { splitHexData, hexStringTohexNumber, calculateAngles } from '@renderer/utils/calcAngle';
 import { useSerialPortInfo } from "@renderer/stores/modules/serialPortInfo";
 
 // 使用串口和组件通信
 const serialPortInfo = useSerialPortInfo();
 const receive = ref<string>("");
 
-
-const data: any = [
-  {
-    id: 1, name: 'zhangsan', age: 16
-  },
-  {
-    id: 2, name: 'lisi', age: 18
-  },
-  {
-    id: 3, name: 'wangwu', age: 20
-  }
-];
 
 // 存储各类数据以及动态绑定选项
 const roll = reactive({ value: 0, chosen: false, name: "Angle_ROL"});
@@ -67,32 +65,68 @@ const magz = reactive({ value: 0, chosen: false, name: "MAG_Z" });
 const gyrx = reactive({ value: 0, chosen: false, name: "GYR_X" });
 const gyry = reactive({ value: 0, chosen: false, name: "GYR_Y" });
 const gyrz = reactive({ value: 0, chosen: false, name: "GYR_Z" });
-let readInterval: any = null;
+let timer = ref<number>(500);
+let source = ref<string>('timer');
+let data: any[] = [];
+const writing = ref<boolean>(false);
+const message = useMessage();
 
-// 从串口读取指定数据
-const readData = async () => {
+const startWrite = async () => {
+  writing.value = true;
+  // 清空之前的数据
+  data = [];
+  // 读取数据
+  const result = await readData() as any[];
+  // 创建 Excel 文件
+  createExcel('DATA.xlsx', 'dataSheet', result);
+};
+
+const stopWrite = () => {
   try {
-    let selectArr = [roll, pitch, yaw, accx, accy, accz, magx, magy, magz, gyrx, gyry, gyrz];
-    // 返回选定的数组
-    const selectedNames = selectArr.filter((item, _index, _array) => {
-      return item.chosen === true;
-    });
-    console.log(selectedNames);
-
-  } catch(err) {
-    throw err;
+    writing.value = false;
+    message.success("写入成功！");
+  } catch (error) {
+    console.error("写入失败..", error);
   }
 };
 
+// 从串口读取指定数据
+const readData = async () => {
+  return new Promise((resolve, reject) => {
+    try {
+      let result: object[] = [];
+      let startTime = new Date().getTime(); // 获取开始时间
 
-// 写入xlsx文件
-const writeXlsxFile = () => {
-  readData();
-  const fields = ['name', 'gender', 'age'];
-  const headers = ['姓名', '性别', '年龄'];
+      const intervalId = setInterval(async () => {
+        try {
+          let selectArr = [roll, pitch, yaw, accx, accy, accz, magx, magy, magz, gyrx, gyry, gyrz];
+          let selectedNames = selectArr.filter(item => item.chosen === true);
+          let formattedData = {};
 
-  exportExcel(data, fields, headers, 'DATA.xlsx', 'dataSheet');
+          // 构造带有时间戳的数据对象
+          const timestamp = Math.floor((new Date().getTime() - startTime));  // 获取毫秒数
+          formattedData['timestamp'] = `${timestamp}ms`;
+          selectedNames.forEach(item => {
+            formattedData[item.name] = item.value;
+          })
+          // 添加数据到result中
+          result.push(formattedData);
+
+          if (!writing.value) {
+            // 停止写入
+            clearInterval(intervalId);
+            resolve(result);
+          }
+        } catch (error) {
+          console.error("读取数据时出错:", error);
+        }
+      }, timer.value);
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
+
 
 // 组件内通信获取数据并进行处理
 watch(serialPortInfo.$state, async(newState, _oldState) => {
@@ -108,57 +142,6 @@ watch(serialPortInfo.$state, async(newState, _oldState) => {
     pitch.value = angles[1];
     yaw.value = angles[2];
   }
-})
-
-// 分割数据
-function splitHexData(hexData: string): [[string, string], [string, string], [string, string]] {
-  const startIndex = hexData.indexOf('aaaa0106');
-  if (startIndex !== -1) {
-    const group1 = hexData.substring(startIndex + 8, startIndex + 12);
-    const group2 = hexData.substring(startIndex + 12, startIndex + 16);
-    const group3 = hexData.substring(startIndex + 16, startIndex + 20);
-
-    const splitGroups = (group: string): [string, string] => {
-      return [group.substring(0, 2), group.substring(2, 4)];
-    };
-
-    return [splitGroups(group1), splitGroups(group2), splitGroups(group3)];
-  }
-  return [["00", "00"], ["00", "00"], ["00", "00"]];
-}
-
-// 添加0x, 转换为16进制
-function hexStringTohexNumber(hexStringList: [[string, string], [string, string], [string, string]]): [[number, number], [number, number], [number, number]] {
-  const insertStr = (singleStringList: [string, string]): [string, string] => {
-    const head: string = "0x";
-    return [head.concat(singleStringList[0]), head.concat(singleStringList[1])];
-  };
-
-  hexStringList = [insertStr(hexStringList[0]), insertStr(hexStringList[1]), insertStr(hexStringList[2])];
-
-  const hexStrToNumber = (singleHexString: [string, string]): [number, number] => {
-    return [parseInt(singleHexString[0], 16), parseInt(singleHexString[1], 16)];
-  };
-
-  return [hexStrToNumber(hexStringList[0]), hexStrToNumber(hexStringList[1]), hexStrToNumber(hexStringList[2])];
-}
-
-// 计算角度
-function calculateAngles(groups: [[number, number], [number, number], [number, number]]): [number, number, number] {
-  const angle = (group: [number, number]): number => {
-    return ((group[0] << 8) + group[1]) / 100;
-  };
-  return [angle(groups[0]),angle(groups[1]), angle(groups[2])];
-}
-
-// 定时器获取数据
-readInterval = setInterval(() => {
-  console.log(roll.value, pitch.value, yaw.value);
-}, 500)
-
-// 组件卸载销毁定时器
-onUnmounted(() => {
-  clearInterval(readInterval);
 })
 </script>
 

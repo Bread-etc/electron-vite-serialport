@@ -27,3 +27,8 @@
 ### 2024-3-20
 - 修改部分变量初始化方式
 - 添加xlsx文件工具`exportXlsx.ts`
+
+### 2024-3-21
+- 修改`exportXlsx.ts`
+- 添加`utils/calcAngle.ts`，增加复用性
+- 完成组件`DataDownload.vue`
