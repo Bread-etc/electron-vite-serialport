@@ -12,11 +12,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("@renderer/components/DataWave.vue"),
   },
   {
-    path: "/flightControl",
-    name: "flightControl",
-    component: () => import("@renderer/components/FlightControl.vue"),
-  },
-  {
     path: "/pid",
     name: "pid",
     component: () => import("@renderer/components/PID.vue"),

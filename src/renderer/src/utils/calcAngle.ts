@@ -58,3 +58,36 @@ export function calculateAngles(
   };
   return [angle(groups[0]), angle(groups[1]), angle(groups[2])];
 }
+
+
+// 计算ACC GYRO MAG
+export function analyticData(hexData: any) {
+    const startIndex = hexData.indexOf('aaaa0212');
+    // 解码收到的信息
+    if (startIndex !== -1) {
+        const group1 = parseInt(hexData.substring(startIndex + 8, startIndex + 12), 16);
+        const group2 = parseInt(hexData.substring(startIndex + 12, startIndex + 16), 16);
+        const group3 = parseInt(hexData.substring(startIndex + 16, startIndex + 20), 16);
+        const group4 = parseInt(hexData.substring(startIndex + 20, startIndex + 24), 16);
+        const group5 = parseInt(hexData.substring(startIndex + 24, startIndex + 28), 16);
+        const group6 = parseInt(hexData.substring(startIndex + 28, startIndex + 32), 16);
+        const group7 = parseInt(hexData.substring(startIndex + 32, startIndex + 36), 16);
+        const group8 = parseInt(hexData.substring(startIndex + 36, startIndex + 40), 16);
+        const group9 = parseInt(hexData.substring(startIndex + 40, startIndex + 44), 16);
+        
+        // 返回解析后的数据
+        return {
+            group1,
+            group2,
+            group3,
+            group4,
+            group5,
+            group6,
+            group7,
+            group8,
+            group9
+        };
+    }
+    // 如果未找到匹配的开始标志，则返回空对象
+    return {};
+}

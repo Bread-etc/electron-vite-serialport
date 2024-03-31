@@ -44,7 +44,7 @@
 import { ref, reactive, watch } from 'vue';
 import { useMessage } from 'naive-ui';
 import { createExcel } from '@renderer/utils/exportXlsx';
-import { splitHexData, hexStringTohexNumber, calculateAngles } from '@renderer/utils/calcAngle';
+import { splitHexData, hexStringTohexNumber, calculateAngles, analyticData } from '@renderer/utils/calcAngle';
 import { useSerialPortInfo } from "@renderer/stores/modules/serialPortInfo";
 
 // 使用串口和组件通信
@@ -67,14 +67,11 @@ const gyry = reactive({ value: 0, chosen: false, name: "GYR_Y" });
 const gyrz = reactive({ value: 0, chosen: false, name: "GYR_Z" });
 let timer = ref<number>(500);
 let source = ref<string>('timer');
-let data: any[] = [];
 const writing = ref<boolean>(false);
 const message = useMessage();
 
 const startWrite = async () => {
   writing.value = true;
-  // 清空之前的数据
-  data = [];
   // 读取数据
   const result = await readData() as any[];
   // 创建 Excel 文件
@@ -138,9 +135,19 @@ watch(serialPortInfo.$state, async(newState, _oldState) => {
     const splitStringData = splitHexData(lastLine);
     const hexNumberData = hexStringTohexNumber(splitStringData);
     const angles = calculateAngles(hexNumberData);
+    const otherData = analyticData(lastLine);
     roll.value = angles[0];
     pitch.value = angles[1];
     yaw.value = angles[2];
+    accx.value = otherData[0];
+    accy.value = otherData[1];
+    accz.value = otherData[2];
+    gyrx.value = otherData[3];
+    gyry.value = otherData[4];
+    gyrz.value = otherData[5];
+    magx.value = otherData[6];
+    magy.value = otherData[7];
+    magz.value = otherData[8];
   }
 })
 </script>

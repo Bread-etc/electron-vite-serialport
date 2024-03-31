@@ -32,3 +32,7 @@
 - 修改`exportXlsx.ts`
 - 添加`utils/calcAngle.ts`，增加复用性
 - 完成组件`DataDownload.vue`
+
+### 2024-3-31
+- 删除飞控状态组件
+- 修改部分细节
